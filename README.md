@@ -1,0 +1,2 @@
+# cookbook-manager
+my project
