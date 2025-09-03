@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Digital Cookbook</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+      position: relative;
+    }
+    .cookbook-theme-bg {
+      background-color: #a0522d;
+    }
+    .cookbook-theme-accent {
+      background-color: #d2b48c;
+    }
+    .recipe-card-bg {
+      background-color: #f9f6e6;
+    }
+    .btn-primary {
+      background-color: #d2b48c;
+      color: #3e2723;
+    }
+    .btn-secondary {
+      background-color: #6a053c;
+      color: #fff;
+    }
+    .btn-danger {
+      background-color: #b33939;
+      color: #fff;
+    }
+    .recipe-image {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 0.5rem;
+    }
+    .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #a0522d;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    
+    .recipe-details {
+      display: none;
+      overflow: hidden;
+      transition: all 0.3s ease-in-out;
+    }
+    .recipe-details.is-open {
+      display: block;
+    }
+
+  
+    .content-container {
+      max-width: 4xl;
+      margin-left: auto;
+      margin-right: auto;
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+    .top-right-logout {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+    
+    textarea {
+      resize: vertical;
+    }
+  </style>
+</head>
+<body class="p-6 relative">
+  <div class="top-right-logout">
+    <button id="logout-btn" type="button" onclick="logoutUser()" class="py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-danger hidden">Logout</button>
+  </div>
+  
+  <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+    <h1 class="text-4xl font-bold text-center text-gray-800 mb-6">My Digital Cookbook</h1>
+
+  <div id="auth-section" class="mb-8 p-6 cookbook-theme-accent rounded-lg shadow-inner text-gray-800">
+      <h2 class="text-2xl font-semibold mb-4 text-center">Authentication</h2>
+      <form id="auth-form" class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium">Username</label>
+          <input type="text" id="username" name="username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" required>
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium">Password</label>
+          <input type="password" id="password" name="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" required>
+        </div>
+        <div class="flex justify-between space-x-4">
+          <button type="button" onclick="registerUser()" class="w-full py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-secondary">Register</button>
+          <button type="button" onclick="loginUser()" class="w-full py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-secondary">Login</button>
+        </div>
+      </form>
+      <p id="auth-status" class="mt-4 text-center text-sm font-medium"></p>
+  </div>
+
+    <div id="recipes-section" class="mt-8 p-6 cookbook-theme-bg rounded-lg shadow-inner text-white hidden">
+      <h2 class="text-2xl font-semibold mb-4 text-center">My Recipes</h2>
+
+      <form id="recipe-form" class="space-y-4 mb-8 p-4 cookbook-theme-accent rounded-md text-gray-800">
+        <div>
+          <label for="recipe-title" class="block text-sm font-medium">Title</label>
+          <input type="text" id="recipe-title" name="title" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+        </div>
+        <div>
+          <label for="recipe-ingredients" class="block text-sm font-medium">Ingredients (comma-separated)</label>
+          <!-- From <input> to <textarea> -->
+          <textarea id="recipe-ingredients" name="ingredients" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></textarea>
+        </div>
+        <div>
+          <label for="recipe-instructions" class="block text-sm font-medium">Instructions</label>
+          <textarea id="recipe-instructions" name="instructions" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required></textarea>
+        </div>
+        <div>
+          <label for="recipe-image" class="block text-sm font-medium">Image</label>
+          <input type="file" id="recipe-image" name="image" class="mt-1 block w-full rounded-md shadow-sm" accept="image/*">
+        </div>
+        <div class="flex justify-between space-x-4">
+          <button type="submit" class="w-full py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-primary">Add Recipe</button>
+          <button type="button" id="update-btn" onclick="updateRecipe()" class="w-full py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-primary hidden">Update Recipe</button>
+        </div>
+      </form>
+
+      <div id="recipes-list" class="space-y-4 text-gray-800">
+        <p class="text-center text-white">Recipes will appear here once you are logged in.</p>
+      </div>
+
+      <div id="message-box" class="fixed inset-0 flex items-center justify-center p-4 z-50" style="background-color: rgba(0,0,0,0.5); display: none;">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 class="text-lg font-bold mb-2">Message</h3>
+            <p id="message-text" class="text-gray-700 mb-4"></p>
+            <button onclick="hideMessageBox()" class="w-full py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-primary">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+    
+// DOM elements
+    const authSection = document.getElementById('auth-section');
+    const authForm = document.getElementById('auth-form');
+    const authStatus = document.getElementById('auth-status');
+    const logoutBtn = document.getElementById('logout-btn');
+    const recipesSection = document.getElementById('recipes-section');
+    const recipeForm = document.getElementById('recipe-form');
+    const recipesList = document.getElementById('recipes-list');
+    const recipeTitleInput = document.getElementById('recipe-title');
+    const recipeIngredientsInput = document.getElementById('recipe-ingredients');
+    const recipeInstructionsInput = document.getElementById('recipe-instructions');
+    const recipeImageInput = document.getElementById('recipe-image');
+    const updateBtn = document.getElementById('update-btn');
+    const addBtn = recipeForm.querySelector('button[type="submit"]');
+
+    let editingRecipeId = null;
+
+    function showMessageBox(message) {
+      document.getElementById('message-text').textContent = message;
+      document.getElementById('message-box').style.display = 'flex';
+    }
+
+    function hideMessageBox() {
+      document.getElementById('message-box').style.display = 'none';
+    }
+
+// AUTHENTICATION functions
+async function registerUser() {
+  const username = authForm.username.value;
+  const password = authForm.password.value;
+
+  try {
+     const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await response.json();
+    showMessageBox(data.message);
+    if (response.ok) {
+      checkLoginStatus();
+      }
+  } catch (err) {
+    showMessageBox('Error registering: ' + err.message);
+  }
+}
+
+    async function loginUser() {
+      const username = authForm.username.value;
+      const password = authForm.password.value;
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await response.json();
+    showMessageBox(data.message);
+    if (response.ok) {
+      checkLoginStatus();
+      fetchRecipes();
+    }
+  } catch (err) {
+    showMessageBox('Error logging in: ' + err.message);
+  }
+}
+
+async function logoutUser() {
+  try {
+    const response = await fetch('/api/auth/logout');
+    const data = await response.json();
+      showMessageBox(data.message);
+    if (response.ok) {
+      authSection.classList.remove('hidden');
+      recipesSection.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+      authStatus.textContent = 'Not logged in';
+      recipesList.innerHTML = '<p class="text-center text-white">Recipes will appear here once you are logged in.</p>';
+      resetForm();
+    }
+  } catch (err) {
+    showMessageBox('Error logging out: ' + err.message);
+  }
+}
+
+async function checkLoginStatus() {
+  try {
+    const response = await fetch('/api/auth/status');
+    const data = await response.json();
+    if (data.loggedIn) {
+      authSection.classList.add('hidden');
+      recipesSection.classList.remove('hidden');
+      logoutBtn.classList.remove('hidden');
+      authStatus.textContent = 'Logged in!';
+      authStatus.classList.remove('text-red-500');
+      authStatus.classList.add('text-green-500');
+      fetchRecipes();
+    } else {
+      authSection.classList.remove('hidden');
+      recipesSection.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+      authStatus.textContent = 'Not logged in';
+      authStatus.classList.remove('text-green-500');
+      authStatus.classList.add('text-red-500');
+    }
+  } catch (err) {
+    authStatus.textContent = 'Could not connect to server.';
+    authStatus.classList.add('text-red-500');
+  }
+}
+
+// RECIPE functions
+async function fetchRecipes() {
+  try {
+    const response = await fetch('/api/recipes');
+    const recipes = await response.json();
+    renderRecipes(recipes);
+  } catch (err) {
+    showMessageBox('Could not fetch recipes: ' + err.message);
+  }
+}
+
+async function createOrUpdateRecipe(e) {
+  e.preventDefault();
+
+  const formData = new FormData(recipeForm);
+  const method = editingRecipeId ? 'PUT' : 'POST';
+  const url = editingRecipeId ? `/api/recipes/${editingRecipeId}` : '/api/recipes';
+
+  try {
+    const response = await fetch(url, {
+      method: method,
+      body: formData
+    });
+    const data = await response.json();
+    showMessageBox(data.message || 'Recipe saved successfully!');
+    if (response.ok) {
+      fetchRecipes();
+      resetForm();
+    }
+  } catch (err) {
+    showMessageBox('Error saving recipe: ' + err.message);
+  }
+}
+
+async function deleteRecipe(id) {
+  try {
+    const response = await fetch(`/api/recipes/${id}`, {
+      method: 'DELETE'
+    });
+    const data = await response.json();
+    showMessageBox(data.message);
+    if (response.ok) {
+      fetchRecipes();
+    }
+  } catch (err) {
+    showMessageBox('Error deleting recipe: ' + err.message);
+  }
+}
+
+function editRecipe(recipe) {
+  editingRecipeId = recipe._id;
+  recipeTitleInput.value = recipe.title;
+  recipeIngredientsInput.value = recipe.ingredients.join(', ');
+  recipeInstructionsInput.value = recipe.instructions;
+
+  addBtn.classList.add('hidden');
+  updateBtn.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateRecipe() {
+  recipeForm.dispatchEvent(new Event('submit'));
+}
+
+function resetForm() {
+  editingRecipeId = null;
+  recipeForm.reset();
+  addBtn.classList.remove('hidden');
+  updateBtn.classList.add('hidden');
+}
+
+function renderRecipes(recipes) {
+  recipesList.innerHTML = '';
+  if (recipes.length === 0) {
+    recipesList.innerHTML = '<p class="text-center text-white">No recipes found. Add one!</p>';
+    return;
+  }
+
+  recipes.forEach(recipe => {
+    const ingredientsList = recipe.ingredients.map(ing => `<li>${ing}</li>`).join('');
+    const formattedInstructions = recipe.instructions.replace(/\n/g, '<br>');
+
+    const recipeCard = document.createElement('div');
+    recipeCard.className = 'bg-white p-6 rounded-md shadow-md hover:shadow-lg transition-shadow duration-300 recipe-card-bg text-gray-800 cursor-pointer';
+
+    // Add an event listener to the card for expanding/collapsing
+    recipeCard.addEventListener('click', (event) => {
+      // Check if the click was on a button to avoid toggling when deleting or editing
+      if (event.target.tagName !== 'BUTTON') {
+        const details = recipeCard.querySelector('.recipe-details');
+        details.classList.toggle('is-open');
+      }
+    });
+
+        recipeCard.innerHTML = `
+          <h3 class="text-xl font-bold mb-2">${recipe.title}</h3>
+          ${recipe.image ? `<img src="${recipe.image}" alt="Image of ${recipe.title}" class="recipe-image mb-4">` : ''}
+          
+      <div class="flex space-x-2 mt-4">
+          <button onclick='editRecipe(${JSON.stringify(recipe)})' class="flex-1 py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-primary">Edit</button>
+          <button onclick="deleteRecipe('${recipe._id}')" class="flex-1 py-2 px-4 rounded-md shadow-sm text-sm font-medium btn-danger">Delete</button>
+      </div>
+
+      <div class="recipe-details mt-4">
+          <hr class="border-gray-300 my-4" />
+          <p class="text-gray-700 mb-2"><strong>Ingredients:</strong></p>
+          <ul class="list-disc list-inside mb-4 text-gray-700">${ingredientsList}</ul>
+          <p class="text-gray-700 mb-4"><strong>Instructions:</strong></p>
+          <p class="text-gray-700">${formattedInstructions}</p>
+      </div>
+      `;
+    recipesList.appendChild(recipeCard);
+  });
+}
+
+// EVENT listeners
+    recipeForm.addEventListener('submit', createOrUpdateRecipe);
+    document.addEventListener('DOMContentLoaded', checkLoginStatus);
+  </script>
+</body>
+</html>
